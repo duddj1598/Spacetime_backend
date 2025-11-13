@@ -5,10 +5,6 @@ class UserSignup(BaseModel):
     id: str
     password: str
     nickname: str
-    address: str
-    email: EmailStr
-    birth: str
-    agreedToTerms: bool
 
 class UserLogin(BaseModel):
     id: str
