@@ -75,11 +75,10 @@ def check_nickname(data: CheckNickname, db: Session = Depends(get_db)):
 # ✅ 비밀번호 재설정 (예시)
 @router.put("/password/reset")
 def reset_password(data: PasswordReset, db: Session = Depends(get_db)):
-    # 임시 예시 로직 (보안 질문 검증 대신 모든 유저 대상 예시)
-    user = db.query(User).filter(User.nickname == "admin").first()  # 예시: 나중에 조건 변경 가능
+    user = db.query(User)
     if not user:
         raise HTTPException(status_code=400, detail="사용자를 찾을 수 없습니다.")
 
     user.password = data.new_password
     db.commit()
-    return {"message": "비밀번호가 성공적으로 변경되었습니다."}
+    return {"status":200,"message": "비밀번호가 성공적으로 변경되었습니다."}
