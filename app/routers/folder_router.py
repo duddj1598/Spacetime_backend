@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.folder_model import Folder
 from app.models.diary_model import Diary
-from app.schemas.folder_schema import FolderCreate, DiaryCreate
+from app.schemas.folder_schema import FolderCreate
+from app.schemas.diary_schema import DiaryCreate 
+
 
 router = APIRouter(prefix="/api/folder", tags=["Folder"])
 

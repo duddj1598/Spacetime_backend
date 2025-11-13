@@ -21,5 +21,4 @@ class CheckNickname(BaseModel):
     nickname: str
 
 class PasswordReset(BaseModel):
-    question_answer: str
     new_password: str
