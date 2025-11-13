@@ -21,4 +21,5 @@ class CheckNickname(BaseModel):
     nickname: str
 
 class PasswordReset(BaseModel):
+    email: EmailStr
     new_password: str

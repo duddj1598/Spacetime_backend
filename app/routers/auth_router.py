@@ -75,7 +75,7 @@ def check_nickname(data: CheckNickname, db: Session = Depends(get_db)):
 # ✅ 비밀번호 재설정 (예시)
 @router.put("/password/reset")
 def reset_password(data: PasswordReset, db: Session = Depends(get_db)):
-    user = db.query(User)
+    user = db.query(User).filter(User.email == data.email).first()
     if not user:
         raise HTTPException(status_code=400, detail="사용자를 찾을 수 없습니다.")
 
