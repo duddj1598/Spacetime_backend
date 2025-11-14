@@ -5,10 +5,6 @@ class UserSignup(BaseModel):
     id: str
     password: str
     nickname: str
-    address: str
-    email: EmailStr
-    birth: str
-    agreedToTerms: bool
 
 class UserLogin(BaseModel):
     id: str
@@ -21,4 +17,5 @@ class CheckNickname(BaseModel):
     nickname: str
 
 class PasswordReset(BaseModel):
+    email: EmailStr
     new_password: str
