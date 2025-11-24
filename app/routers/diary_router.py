@@ -18,6 +18,7 @@ def get_diary_detail(diary_id: int = Query(...), db: Session = Depends(get_db)):
         "status": 200,
         "diary": {
             "diary_id": diary.diary_id,
+            "folder_id" : diary.folder_id,
             "title": diary.title,
             "content": diary.content,
             "theme": diary.theme or "default",
