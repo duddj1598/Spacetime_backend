@@ -109,7 +109,6 @@ def create_diary(data: DiaryCreate, db: Session = Depends(get_db)):
         content=data.content,
         photos=data.photos,
         theme=data.theme,
-        # {"lat": ..., "lng": ...}
         location=data.location,
     )
     db.add(new_diary)

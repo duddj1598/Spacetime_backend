@@ -1,0 +1,21 @@
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+
+class UserSignup(BaseModel):
+    id: str
+    password: str
+    nickname: str
+
+class UserLogin(BaseModel):
+    id: str
+    password: str
+
+class CheckEmail(BaseModel):
+    email: EmailStr
+
+class CheckNickname(BaseModel):
+    nickname: str
+
+class PasswordReset(BaseModel):
+    email: EmailStr
+    new_password: str
