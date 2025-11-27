@@ -116,3 +116,31 @@ def handle_friend_request(request: FriendAcceptRequest, receiver_id: str = Query
 
     db.commit()
     return {"status": 200, "message": message}
+
+@router.get("/pending")
+def get_pending_requests(user_id: str = Query(...), db: Session = Depends(get_db)):
+    """
+    user_id 기준으로 대기중인 친구 요청 목록을 반환
+    """
+    pending_requests = (
+        db.query(FriendRequest)
+        .filter(
+            ((FriendRequest.sender_id == user_id) | (FriendRequest.receiver_id == user_id)),
+            FriendRequest.status == FriendStatus.pending
+        )
+        .all()
+    )
+
+    result = []
+    for req in pending_requests:
+        other_id = req.receiver_id if req.sender_id == user_id else req.sender_id
+        other_user = db.query(User).filter(User.id == other_id).first()
+
+        result.append({
+            "friend_id": other_user.id,
+            "nickname": other_user.nickname,
+            "type": "sent" if req.sender_id == user_id else "received"
+        })
+
+    return {"status": 200, "pending": result}
+
