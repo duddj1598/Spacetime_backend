@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.folder_model import Folder
 from app.models.diary_model import Diary
-from app.schemas.folder_schema import FolderCreate, FolderUpdate # ⭐️ FolderUpdate 스키마 필요 (추가 가정)
+from app.schemas.folder_schema import FolderCreate, FolderUpdate 
 from app.schemas.diary_schema import DiaryCreate 
-from typing import Optional # Optional 타입 사용을 위해 추가
+from typing import Optional 
 
 router = APIRouter(prefix="/api/folder", tags=["Folder"])
 
@@ -14,7 +14,6 @@ router = APIRouter(prefix="/api/folder", tags=["Folder"])
 @router.get("/list/me")
 def get_my_folders(user_id: str = Query(...), db: Session = Depends(get_db)):
     folders = db.query(Folder).filter(Folder.user_id == user_id).all()
-    # ⚠️ 필요한 필드가 더 있을 수 있습니다 (예: main_folder_img)
     data = [{"title": f.title, "folder_id": f.folder_id} for f in folders]
     return {"status": 200, "folders": data}
 
@@ -94,11 +93,10 @@ def create_folder(data: FolderCreate, db: Session = Depends(get_db)):
 
 
 # ⭐️ 5-1. 폴더 이름 수정 (추가 기능) ⭐️
-# FolderUpdate 스키마는 title 필드를 포함해야 합니다.
 @router.put("/{folder_id}")
 def update_folder_name(
     folder_id: int,
-    data: Optional[FolderUpdate] = None, # PATCH 대신 PUT을 사용하거나, title만 받도록 스키마 정의
+    data: Optional[FolderUpdate] = None, 
     db: Session = Depends(get_db)
 ):
     """
@@ -109,7 +107,6 @@ def update_folder_name(
     if not folder:
         raise HTTPException(status_code=404, detail="폴더를 찾을 수 없습니다.")
         
-    # 예시: title 필드만 업데이트
     if data and data.title:
         folder.title = data.title
         db.commit()
@@ -119,19 +116,19 @@ def update_folder_name(
     return {"status": 200, "message": "수정할 내용이 없습니다."}
 
 
-# ✅ 6. 일기 작성
+# ✅ 6. 일기 작성 (AttributeError 수정 완료)
 @router.post("/create")
 def create_diary(data: DiaryCreate, db: Session = Depends(get_db)):
     folder = db.query(Folder).filter(Folder.folder_id == data.folder_id).first()
     if not folder:
         raise HTTPException(status_code=404, detail="폴더를 찾을 수 없습니다.")
 
-    # ⚠️ DB 필드와 스키마 필드 이름이 정확히 일치해야 합니다.
+    # ⭐️ 오류 수정: data.diary.title 대신 data 객체에서 직접 필드 접근 ⭐️
     new_diary = Diary(
         folder_id=data.folder_id,
-        title=data.diary.title,        # ⚠️ data.diary["title"] 대신 data.diary.title 사용 가정
-        content=data.diary.content,    # ⚠️ data.diary["content"] 대신 data.diary.content 사용 가정
-        photos=data.diary.photos,      # ⚠️ data.diary["photos"] 대신 data.diary.photos 사용 가정
+        title=data.title,         # 수정
+        content=data.content,     # 수정
+        photos=data.photos,       # 수정
         location=data.location,
     )
     db.add(new_diary)
