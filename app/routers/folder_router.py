@@ -3,9 +3,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.folder_model import Folder
 from app.models.diary_model import Diary
-from app.schemas.folder_schema import FolderCreate, FolderUpdate
+from app.schemas.folder_schema import FolderCreate
 from app.schemas.diary_schema import DiaryCreate 
-from typing import Optional
 
 
 router = APIRouter(prefix="/api/folder", tags=["Folder"])
@@ -45,26 +44,36 @@ def get_global_folders(hashtag: str = Query(...), db: Session = Depends(get_db))
 
 # ✅ 4. 폴더 상세 조회 + 지도용 데이터
 @router.get("/detail")
-def get_shared_folder_detail(
-    folder_id: int = Query(...),
-    current_user_id: str = Query(...), # 접근하려는 사용자 ID (로그인 유저)
-    db: Session = Depends(get_db)
-):
-    """
-    폴더가 공개 상태인지 확인 후 상세 내용을 반환합니다.
-    (내 폴더이거나, 공개 상태일 경우만 허용)
-    """
+def get_folder_detail(folder_id: int = Query(...), db: Session = Depends(get_db)):
     folder = db.query(Folder).filter(Folder.folder_id == folder_id).first()
-
     if not folder:
         raise HTTPException(status_code=404, detail="폴더를 찾을 수 없습니다.")
 
-    # 1. 내 폴더이거나 2. 폴더가 공개 설정이어야 접근 허용
-    if folder.user_id == current_user_id or folder.is_public:
-        # 기존 상세 조회 로직 재사용
-        return get_folder_detail(folder_id=folder_id, db=db)
-    else:
-        raise HTTPException(status_code=403, detail="이 폴더를 조회할 권한이 없습니다.")
+    diaries = db.query(Diary).filter(Diary.folder_id == folder_id).all()
+
+    diary_data = []
+    for d in diaries:
+        main_photo = d.photos[0] if d.photos else None
+        diary_data.append(
+            {
+                "diary_id": d.diary_id,
+                "title": d.title,
+                # location: { "lat": ..., "lng": ... } or None
+                "location": d.location,
+                "main_photo": main_photo,
+            }
+        )
+
+    return {
+        "status": 200,
+        "folder": {
+            "folder_id": folder.folder_id,
+            "title": folder.title,
+            "main_folder_img": folder.main_folder_img,
+            "is_public": folder.is_public,
+            "diaries": diary_data,
+        },
+    }
 
 
 # ✅ 5. 폴더 생성 (그대로 유지)
@@ -85,31 +94,6 @@ def create_folder(data: FolderCreate, db: Session = Depends(get_db)):
         "main_folder_img": new_folder.main_folder_img,
         "message": "정상적으로 폴더가 생성되었습니다.",
     }
-
-# ⭐️ 5-1. 폴더 이름 수정 (추가 기능) ⭐️
-# FolderUpdate 스키마는 title 필드를 포함해야 합니다.
-@router.put("/{folder_id}")
-def update_folder_name(
-    folder_id: int,
-    data: Optional[FolderUpdate] = None, # PATCH 대신 PUT을 사용하거나, title만 받도록 스키마 정의
-    db: Session = Depends(get_db)
-):
-    """
-    기존 폴더의 제목을 수정합니다.
-    """
-    folder = db.query(Folder).filter(Folder.folder_id == folder_id).first()
-
-    if not folder:
-        raise HTTPException(status_code=404, detail="폴더를 찾을 수 없습니다.")
-
-    # 예시: title 필드만 업데이트
-    if data and data.title:
-        folder.title = data.title
-        db.commit()
-        db.refresh(folder)
-        return {"status": 200, "message": f"폴더 제목이 '{folder.title}'로 수정되었습니다."}
-
-    return {"status": 200, "message": "수정할 내용이 없습니다."}
 
 
 # ✅ 6. 일기 작성 (DiaryCreate 스키마에 맞게 수정)
