@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.notification_model import Notification
+from app.models.user_model import User
 from app.schemas.notification_schema import NotificationListResponse, NotificationCreateRequest
 from app.utils.jwt_handler import get_current_user
 
@@ -10,14 +11,13 @@ router = APIRouter(prefix="/api/notification", tags=["Notification"])
 # ✅ 알림 목록 조회 (JWT 기반)
 @router.get("/list", response_model=NotificationListResponse)
 def get_notifications(
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     사용자의 알림 목록을 조회합니다. (JWT 기반)
     """
-    print("현재 유저 정보:", current_user)  
-    user_id = current_user["sub"]
+    user_id = current_user.id
 
     notifications = (
         db.query(Notification)
@@ -34,13 +34,13 @@ def get_notifications(
 @router.post("/create")
 def create_notification(
     req: NotificationCreateRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     JWT 기반: 현재 로그인한 유저에게 알림을 생성합니다.
     """
-    user_id = current_user["sub"]
+    user_id = current_user.id
 
     new_notif = Notification(
         user_id=user_id,

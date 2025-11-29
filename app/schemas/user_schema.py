@@ -6,20 +6,25 @@ from typing import Optional
 # ---------------------------------------------------------
 class UserResponse(BaseModel):
     user_id: str
-    email: str
-    name: Optional[str] = None
     nickname: Optional[str] = None
     profile_image: Optional[str] = None
+    friend_count: Optional[int] = 0
+    monthly_note: Optional[str] = None
 
     class Config:
         orm_mode = True
 
 
 # ---------------------------------------------------------
-# 수정 요청 스키마
+# 수정 요청 스키마 (user_id 제거 - JWT로 처리)
 # ---------------------------------------------------------
 class UserEdit(BaseModel):
-    user_id: str
     profile_image: Optional[str] = None
     nickname: Optional[str] = None
-    name: Optional[str] = None
+
+
+# ---------------------------------------------------------
+# 이번 달의 한 줄 기록 업데이트 스키마
+# ---------------------------------------------------------
+class MonthlyNoteUpdate(BaseModel):
+    monthly_note: str
