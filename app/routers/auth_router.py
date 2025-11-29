@@ -43,7 +43,7 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == data.id).first()
     if not user or user.password != data.password:
         raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다.")
-
+    
     token = create_access_token({"sub": user.id})
     return {"status": 200, "accessToken": token}
 

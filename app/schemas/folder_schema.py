@@ -14,3 +14,17 @@ class FolderResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+class FolderUpdate(BaseModel):
+    """
+    폴더 정보 수정을 위한 스키마입니다.
+    수정은 선택 사항이므로 모든 필드는 Optional입니다.
+    """
+    title: Optional[str] = None
+    main_folder_img: Optional[str] = None
+    is_public: Optional[bool] = None
+
+    # Pydantic V1 설정이 기존 코드에 있으므로, orm_mode도 추가해줍니다.
+    class Config:
+        orm_mode = True 
+        # Pydantic V2를 사용한다면: from_attributes = True
