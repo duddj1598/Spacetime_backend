@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.folder_model import Folder
 from app.models.diary_model import Diary
+from app.models.friend_model import FriendRequest, FriendStatus
+from app.models.user_model import User
 from app.schemas.folder_schema import FolderCreate, FolderUpdate 
 from app.schemas.diary_schema import DiaryCreate 
 from typing import Optional 
@@ -14,19 +16,93 @@ router = APIRouter(prefix="/api/folder", tags=["Folder"])
 @router.get("/list/me")
 def get_my_folders(user_id: str = Query(...), db: Session = Depends(get_db)):
     folders = db.query(Folder).filter(Folder.user_id == user_id).all()
-    data = [{"title": f.title, "folder_id": f.folder_id} for f in folders]
+    
+    # ⭐️ 응답 형식 개선 - 더 많은 정보 제공 ⭐️
+    data = []
+    for f in folders:
+        # 폴더의 첫 번째 일기 사진 가져오기
+        first_diary = db.query(Diary).filter(Diary.folder_id == f.folder_id).first()
+        main_img = None
+        if first_diary and first_diary.photos:
+            main_img = first_diary.photos[0]
+        
+        data.append({
+            "folder_id": f.folder_id,
+            "title": f.title,
+            "main_folder_img": f.main_folder_img or main_img,
+            "is_public": f.is_public,
+            "diary_count": db.query(Diary).filter(Diary.folder_id == f.folder_id).count()
+        })
+    
     return {"status": 200, "folders": data}
 
 
-# ✅ 2. 친구 폴더 조회 (공개 폴더만)
-@router.get("/list/friend")
-def get_friend_folders(user_id: str = Query(...), db: Session = Depends(get_db)):
-    folders = (
-        db.query(Folder)
-        .filter(Folder.user_id == user_id, Folder.is_public == True)
+# ✅ 2. 친구 폴더 조회 (수정됨) - 친구들의 공개 폴더만
+@router.get("/list/friends")
+def get_friends_public_folders(user_id: str = Query(...), db: Session = Depends(get_db)):
+    """
+    현재 유저와 친구 관계인 사람들의 공개 폴더를 모두 가져옵니다.
+    """
+    # 1. 친구 목록 가져오기 (accepted 상태만)
+    sent_friends = (
+        db.query(FriendRequest)
+        .filter(
+            FriendRequest.sender_id == user_id,
+            FriendRequest.status == FriendStatus.accepted
+        )
         .all()
     )
-    data = [{"title": f.title, "folder_id": f.folder_id} for f in folders]
+    
+    received_friends = (
+        db.query(FriendRequest)
+        .filter(
+            FriendRequest.receiver_id == user_id,
+            FriendRequest.status == FriendStatus.accepted
+        )
+        .all()
+    )
+    
+    # 2. 친구들의 user_id 수집
+    friend_ids = []
+    for f in sent_friends:
+        friend_ids.append(f.receiver_id)
+    for f in received_friends:
+        friend_ids.append(f.sender_id)
+    
+    # 3. 친구들의 공개 폴더만 조회
+    if not friend_ids:
+        return {"status": 200, "folders": []}
+    
+    folders = (
+        db.query(Folder)
+        .filter(
+            Folder.user_id.in_(friend_ids),  # ✅ 친구들의 폴더
+            Folder.is_public == True          # ✅ 공개된 폴더만
+        )
+        .all()
+    )
+    
+    # 4. 응답 데이터 구성
+    data = []
+    for f in folders:
+        # 폴더 주인 정보
+        owner = db.query(User).filter(User.id == f.user_id).first()
+        
+        # 폴더의 첫 번째 일기 사진 가져오기
+        first_diary = db.query(Diary).filter(Diary.folder_id == f.folder_id).first()
+        main_img = None
+        if first_diary and first_diary.photos:
+            main_img = first_diary.photos[0]
+        
+        data.append({
+            "folder_id": f.folder_id,
+            "title": f.title,
+            "owner_nickname": owner.nickname if owner else "Unknown",
+            "owner_id": f.user_id,
+            "main_folder_img": f.main_folder_img or main_img,
+            "diary_count": db.query(Diary).filter(Diary.folder_id == f.folder_id).count()
+        })
+    
     return {"status": 200, "folders": data}
 
 
