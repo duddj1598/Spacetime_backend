@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import Optional
 
+# ⭐️ 기존 스키마 유지 ⭐️
+
 class FolderCreate(BaseModel):
     title: str
     user_id: str
@@ -15,6 +17,7 @@ class FolderResponse(BaseModel):
     class Config:
         orm_mode = True
 
+# ⭐️ FolderUpdate 스키마 추가 (오류 해결) ⭐️
 class FolderUpdate(BaseModel):
     """
     폴더 정보 수정을 위한 스키마입니다.
@@ -23,7 +26,7 @@ class FolderUpdate(BaseModel):
     title: Optional[str] = None
     main_folder_img: Optional[str] = None
     is_public: Optional[bool] = None
-
+    
     # Pydantic V1 설정이 기존 코드에 있으므로, orm_mode도 추가해줍니다.
     class Config:
         orm_mode = True 
