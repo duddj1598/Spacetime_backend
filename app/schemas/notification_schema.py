@@ -13,3 +13,8 @@ class NotificationResponseItem(BaseModel):
 class NotificationListResponse(BaseModel):
     status: int
     notification: List[NotificationResponseItem]
+
+    
+# 🔔 알림 생성 요청용 스키마
+class NotificationCreateRequest(BaseModel):
+    content: str

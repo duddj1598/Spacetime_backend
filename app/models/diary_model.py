@@ -9,8 +9,7 @@ class Diary(Base):
     folder_id = Column(Integer, ForeignKey("folders.folder_id"))
     title = Column(String, nullable=False)
     content = Column(String, nullable=False)
-    photos = Column(JSON, nullable=True)
-    theme = Column(String, nullable=True)
-    location = Column(JSON, nullable=True)
+    photos = Column(JSON, nullable=True)   # ["a.jpg", "b.jpg", ...]
+    location = Column(JSON, nullable=True)  # location: {"lat": 37.123, "lng": 127.456}
 
     folder = relationship("Folder", back_populates="diaries")

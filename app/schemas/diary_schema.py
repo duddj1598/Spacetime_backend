@@ -1,5 +1,9 @@
 from pydantic import BaseModel
-from typing import Optional, List, Any
+from typing import Optional, List, Dict
+
+# location은 { "lat": float, "lng": float } 구조로 사용
+Location = Dict[str, float]
+
 
 class DiaryCreate(BaseModel):
     folder_id: int
@@ -7,7 +11,8 @@ class DiaryCreate(BaseModel):
     content: str
     photos: Optional[List[str]] = None
     theme: Optional[str] = None
-    location: Optional[Any] = None
+    location: Optional[Location] = None   # {"lat": ..., "lng": ...}
+
 
 class DiaryDetailResponse(BaseModel):
     diary_id: int
@@ -15,7 +20,7 @@ class DiaryDetailResponse(BaseModel):
     content: str
     theme: Optional[str]
     photos: Optional[List[str]] = None
-    location: Optional[Any] = None
+    location: Optional[Location] = None
 
     class Config:
         orm_mode = True

@@ -10,7 +10,7 @@ from typing import Optional
 router = APIRouter(prefix="/api/folder", tags=["Folder"])
 
 
-# ✅ 1. 내 폴더 조회
+# ✅ 1. 내 폴더 조회 (그대로 유지)
 @router.get("/list/me")
 def get_my_folders(user_id: str = Query(...), db: Session = Depends(get_db)):
     folders = db.query(Folder).filter(Folder.user_id == user_id).all()
@@ -18,34 +18,62 @@ def get_my_folders(user_id: str = Query(...), db: Session = Depends(get_db)):
     return {"status": 200, "folders": data}
 
 
-# ✅ 2. 친구 폴더 조회
+# ✅ 2. 친구 폴더 조회 (공개 폴더만)
 @router.get("/list/friend")
 def get_friend_folders(user_id: str = Query(...), db: Session = Depends(get_db)):
-    folders = db.query(Folder).filter(Folder.user_id == user_id, Folder.is_public == True).all()
+    folders = (
+        db.query(Folder)
+        .filter(Folder.user_id == user_id, Folder.is_public == True)
+        .all()
+    )
     data = [{"title": f.title, "folder_id": f.folder_id} for f in folders]
     return {"status": 200, "folders": data}
 
 
-# ✅ 3. 해시태그 폴더 조회
+# ✅ 3. 해시태그 폴더 조회 (제목 검색)
 @router.get("/list/global")
 def get_global_folders(hashtag: str = Query(...), db: Session = Depends(get_db)):
-    folders = db.query(Folder).filter(Folder.is_public == True, Folder.title.contains(hashtag)).all()
+    folders = (
+        db.query(Folder)
+        .filter(Folder.is_public == True, Folder.title.contains(hashtag))
+        .all()
+    )
     data = [{"title": f.title, "folder_id": f.folder_id} for f in folders]
     return {"status": 200, "folders": data}
 
 
-# ✅ 4. 폴더 상세 조회
+# ✅ 4. 폴더 상세 조회 + 지도용 데이터
 @router.get("/detail")
 def get_folder_detail(folder_id: int = Query(...), db: Session = Depends(get_db)):
+    folder = db.query(Folder).filter(Folder.folder_id == folder_id).first()
+    if not folder:
+        raise HTTPException(status_code=404, detail="폴더를 찾을 수 없습니다.")
+
     diaries = db.query(Diary).filter(Diary.folder_id == folder_id).all()
+
     diary_data = []
     for d in diaries:
-        diary_data.append({
-            "location": d.location,
-            "diary_id": d.diary_id,
-            "main_photo": d.photos[0] if d.photos else None
-        })
-    return {"status": 200, "diary_id": diary_data}
+        main_photo = d.photos[0] if d.photos else None
+        diary_data.append(
+            {
+                "diary_id": d.diary_id,
+                "title": d.title,
+                # location: { "lat": ..., "lng": ... } or None
+                "location": d.location,
+                "main_photo": main_photo,
+            }
+        )
+
+    return {
+        "status": 200,
+        "folder": {
+            "folder_id": folder.folder_id,
+            "title": folder.title,
+            "main_folder_img": folder.main_folder_img,
+            "is_public": folder.is_public,
+            "diaries": diary_data,
+        },
+    }
 
 
 # ⭐️ 4-1. 친구 폴더 상세 조회 (추가 기능) ⭐️
@@ -126,12 +154,16 @@ def create_diary(data: DiaryCreate, db: Session = Depends(get_db)):
     # ⭐️ 오류 수정: data.diary.title 대신 data 객체에서 직접 필드 접근 ⭐️
     new_diary = Diary(
         folder_id=data.folder_id,
-        title=data.title,         # 수정
-        content=data.content,     # 수정
-        photos=data.photos,       # 수정
+        title=data.title,
+        content=data.content,
+        photos=data.photos,
         location=data.location,
     )
     db.add(new_diary)
     db.commit()
     db.refresh(new_diary)
-    return {"status": 200, "diary_id": new_diary.diary_id, "message": "정상적으로 일기를 작성하였습니다."}
+    return {
+        "status": 200,
+        "diary_id": new_diary.diary_id,
+        "message": "정상적으로 일기를 작성하였습니다.",
+    }
