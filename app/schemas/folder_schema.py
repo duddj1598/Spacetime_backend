@@ -31,3 +31,6 @@ class FolderUpdate(BaseModel):
     class Config:
         orm_mode = True 
         # Pydantic V2를 사용한다면: from_attributes = True
+
+class FolderVisibilityUpdate(BaseModel):
+    is_public: bool
