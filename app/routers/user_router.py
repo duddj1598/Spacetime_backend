@@ -131,9 +131,11 @@ def edit_my_info(
 # ✔ 나의 기록 모아보기 (JWT만으로 처리)
 # GET /api/user/my-diaries
 # ===========================================
+# user_router.py의 get_my_folders 함수 수정
+
 @router.get("/my-diaries")
-def get_my_diaries(
-    current_user: User = Depends(get_current_user),
+def get_my_folders(
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -157,14 +159,17 @@ def get_my_diaries(
                 "diary_id": diary.diary_id,
                 "title": diary.title,
                 "main_photo": main_photo,
-                "location": diary.location,
-                "theme": diary.theme
+                "location": diary.location
             })
         
+        # ⭐️ is_public, main_folder_img 추가
         result.append({
             "folder_id": folder.folder_id,
-            "folder_title": folder.title,
+            "title": folder.title,  # ⭐️ folder_title → title로 변경
+            "is_public": folder.is_public,  # ⭐️ 추가
+            "main_folder_img": folder.main_folder_img,  # ⭐️ 추가
             "diaries": diary_list
+            # ❌ created_at 제거! (Folder 모델에 없음)
         })
     
     return {
