@@ -17,6 +17,7 @@ router = APIRouter(prefix="/api/auth", tags=["Auth"])
 # ✅ 회원가입 (spacetime.db에 실제 저장)
 @router.post("/signup")
 def signup(data: UserSignup, db: Session = Depends(get_db)):
+    print("Signup data received:", data)
     # 중복 검사 (id, nickname, email)
     if db.query(User).filter(User.id == data.id).first():
         raise HTTPException(status_code=400, detail="이미 존재하는 이메일입니다.")
@@ -81,8 +82,6 @@ from app.utils.jwt_handler import create_access_token
 import smtplib
 from email.mime.text import MIMEText
 import random
-
-router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
 # 🔥 임시로 인증번호 저장 (실서비스는 Redis 권장)
 TEMP_CODES = {}

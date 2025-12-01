@@ -10,7 +10,7 @@ class DiaryCreate(BaseModel):
     title: str
     content: str
     photos: Optional[List[str]] = None
-    theme: Optional[str] = None
+    date: Optional[str] = None  # "YYYY-MM-DD" 형식
     location: Optional[Location] = None   # {"lat": ..., "lng": ...}
 
 
