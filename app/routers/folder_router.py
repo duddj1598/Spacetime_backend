@@ -19,15 +19,18 @@ def get_my_folders(user_id: str = Query(...), db: Session = Depends(get_db)):
     
     data = []
     for f in folders:
-        first_diary = db.query(Diary).filter(Diary.folder_id == f.folder_id).first()
-        main_img = None
-        if first_diary and first_diary.photos:
-            main_img = first_diary.photos[0]
+        # 대표 이미지 우선순위: main_folder_img > 첫번째 일기의 첫번째 사진
+        main_img = f.main_folder_img
+        
+        if not main_img:
+            first_diary = db.query(Diary).filter(Diary.folder_id == f.folder_id).first()
+            if first_diary and first_diary.photos:
+                main_img = first_diary.photos[0]
         
         data.append({
             "folder_id": f.folder_id,
             "title": f.title,
-            "main_folder_img": f.main_folder_img or main_img,
+            "main_folder_img": main_img,
             "is_public": f.is_public,
             "diary_count": db.query(Diary).filter(Diary.folder_id == f.folder_id).count()
         })
@@ -78,17 +81,20 @@ def get_friends_public_folders(user_id: str = Query(...), db: Session = Depends(
     for f in folders:
         owner = db.query(User).filter(User.id == f.user_id).first()
         
-        first_diary = db.query(Diary).filter(Diary.folder_id == f.folder_id).first()
-        main_img = None
-        if first_diary and first_diary.photos:
-            main_img = first_diary.photos[0]
+        # 대표 이미지 우선순위: main_folder_img > 첫번째 일기의 첫번째 사진
+        main_img = f.main_folder_img
+        
+        if not main_img:
+            first_diary = db.query(Diary).filter(Diary.folder_id == f.folder_id).first()
+            if first_diary and first_diary.photos:
+                main_img = first_diary.photos[0]
         
         data.append({
             "folder_id": f.folder_id,
             "title": f.title,
             "owner_nickname": owner.nickname if owner else "Unknown",
             "owner_id": f.user_id,
-            "main_folder_img": f.main_folder_img or main_img,
+            "main_folder_img": main_img,
             "diary_count": db.query(Diary).filter(Diary.folder_id == f.folder_id).count()
         })
     
@@ -107,7 +113,7 @@ def get_global_folders(hashtag: str = Query(...), db: Session = Depends(get_db))
     return {"status": 200, "folders": data}
 
 
-# ✅ 4. 폴더 상세 조회
+# ✅ 4. 폴더 상세 조회 (날짜 필드 추가)
 @router.get("/detail")
 def get_folder_detail(folder_id: int = Query(...), db: Session = Depends(get_db)):
     folder = db.query(Folder).filter(Folder.folder_id == folder_id).first()
@@ -125,6 +131,7 @@ def get_folder_detail(folder_id: int = Query(...), db: Session = Depends(get_db)
                 "title": d.title,
                 "location": d.location,
                 "main_photo": main_photo,
+                "date": d.date if hasattr(d, 'date') else None,  # 날짜 추가
             }
         )
 
@@ -158,13 +165,18 @@ def get_shared_folder_detail(
         raise HTTPException(status_code=403, detail="이 폴더를 조회할 권한이 없습니다.")
 
 
-# ✅ 6. 폴더 생성
+# ✅ 6. 폴더 생성 (이미지 Base64 저장 지원)
 @router.post("")
 def create_folder(data: FolderCreate, db: Session = Depends(get_db)):
+    """
+    폴더 생성 API
+    - main_folder_img는 Base64 이미지 문자열 또는 빈 문자열을 받습니다.
+    - 프론트엔드에서 FileReader로 변환한 Base64 문자열을 그대로 저장합니다.
+    """
     new_folder = Folder(
         title=data.title,
         user_id=data.user_id,
-        main_folder_img=data.main_folder_img,
+        main_folder_img=data.main_folder_img if data.main_folder_img else None,
         is_public=data.is_public,
     )
     db.add(new_folder)
@@ -178,7 +190,7 @@ def create_folder(data: FolderCreate, db: Session = Depends(get_db)):
     }
 
 
-# ⭐️ 6-1. 폴더 공개 설정 변경 (새로 추가!)
+# ⭐️ 6-1. 폴더 공개 설정 변경
 @router.put("/{folder_id}/visibility")
 def update_folder_visibility(
     folder_id: int,
@@ -242,6 +254,7 @@ def create_diary(data: DiaryCreate, db: Session = Depends(get_db)):
         title=data.title,
         content=data.content,
         photos=data.photos,
+        date=data.date,
         location=data.location,
     )
     db.add(new_diary)
