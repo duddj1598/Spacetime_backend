@@ -21,9 +21,7 @@ def get_diary_detail(diary_id: int = Query(...), db: Session = Depends(get_db)):
             "folder_id" : diary.folder_id,
             "title": diary.title,
             "content": diary.content,
-            "theme": diary.theme or "default",
             "photos": diary.photos or [],
-            # {"lat": float, "lng": float} 형태
             "location": diary.location,
         },
     }
